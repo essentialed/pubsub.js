@@ -13,8 +13,9 @@ var testData = (function generateData(){
         r.push({
             'topic': t,
             'message': m,
-            'token': PubSub.subscribe(t, m, fn),
-            'fn': fn
+            'token': PubSub.subscribe(t, m, cb),
+            'context': undefined,
+            'cb': cb
         });
     }
 
@@ -28,7 +29,8 @@ var testData = (function generateData(){
                 'topic': this.topic + token,
                 'message': this.topic + token,
                 'token': token,
-                'fn': fn
+                'context': undefined,
+                'cb': cb
             });
         }
     };
@@ -36,17 +38,17 @@ var testData = (function generateData(){
 
 module('Using PubSub directly (window.PubSub)');
 
-test('Token Incrementation', function() {
-    var token = PubSub.subscribe('a topic', fn);
+test('Token', function() {
+    var token = PubSub.subscribe('a topic', cb);
     testData.push(token);
 
     expect(3);
 
-    deepEqual(token, count(PubSub.topics) - 1 + '', 'Token represents the total number of subscribers');
-
-    deepEqual(PubSub.topics[testData.topic + '22'][0].token, '22', 'Subscriber #22 has token #22');
+    deepEqual(token, '501', 'Subscribe method returns the token');
 
     deepEqual(testData.data[23].token, '23', 'Test data #23 has token #23');
+
+    deepEqual(testData.data[239].token, '239', 'Test data #239 has token #239');
 
 });
 
@@ -80,7 +82,7 @@ test('Subscribe', function() {
         'Subscribers with message appear only in topic_messages');
 });
 
-function fn() {}
+function cb() {}
 
 function count(what) {
     var i = 0;

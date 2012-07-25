@@ -1,54 +1,77 @@
-/** PubSub.js 0.1
+/** PubSub.js 0.1 (c) 2012 Essential Education
+**/
 
-(c) 2012 Essential Education
-*/
-
-;(function(window, context, module_name, undefined) {
-    var each, uid = 0,
+var PubSub = (function(window, undefined) {
+    var each, uid = 0, slice = Array.prototype.slice,
         defaults = {
-            'subtopic': false,
+            'subtopic': true,
             'subtopic_marker': ':',
             'log': false
         };
 
     function PubSub(opts){
+        /* PubSub Constructor
+         *
+         * @opts {Object} Options for the PubSub instance, extends defaults.
+         *
+         */
 
         return this.initialize();
     }
 
     function initialize(opts) {
+        /* Setup new PubSub instance, make sure we have everything we need.
+         */
 
         var settings = this.settings = {},
             o;
 
+        // Settings
         for(o in defaults) {
             if (!defaults.hasOwnProperty(o)) { continue; }
             settings[o] = (opts && o in opts) ? opts[o] : defaults[o];
         }
 
+        // A place to store topic subscriptions.
         this.topics = {};
 
+        // A place to store subscriptions with both a topic & a message.
         this.topic_messages = {};
 
         return this;
     }
 
-    function subscribe(topic, message, fn) {
-        /* Subscribe to a topic
-         * @topic - String - the topic, string
-         * @message - Anything that can be used as an object key [Optional]
-         * @fn - Function - the callback
+    function subscribe(topic, message, cb, context) {
+        /* Subscribe to a topic.
+         *
+         * @topic {String} The topic to subscribe to
+         * @message {String|Number|Boolean} Subscribe to a specific message
+         *  [Optional]
+         * @cb {Function} Callback function
+         * @context {Any} The context of the callback function.
+         * @returns {String} The token for this subscription, needed for
+         *  unsubscribing.
+         *
+         * PubSub.subscribe('new_message', function(subscription) {
+         *   console.log('Message has been received:', subscription.message);
+         * });
+         *
+         * PubSub.subscribe('new_message', 'Hello', function(subscription) {
+         *   console.log('The message "Hello" has been received');
+         * });
+         *
+         *
          */
 
         var token = ''+uid++,
             t;
 
-        if (typeof message === 'function' && fn === undefined) {
-            fn = message;
+        if (typeof message === 'function' && cb === undefined) {
+            cb = message;
             message = undefined;
         }
 
-        if (typeof fn !== 'function') {
+        if (typeof cb !== 'function') {
             throw Error('PubSub.Subscribe: Callback is not a function.');
         }
 
@@ -68,41 +91,58 @@
         t.push({
             'message': message,
             'topic': topic,
-            'fn': fn,
-            'token': token
+            'cb': cb,
+            'token': token,
+            'context': context
         });
 
-        this.log('PubSub.subscribe', topic, message, token, fn, this);
+        this.log('PubSub.subscribe', topic, message, token, cb, this);
 
         return token;
     }
 
-    function publish(topic, message, parent_topic) {
+    function publish(topic, message) {
+        /* Publish to a topic.
+         *
+         * @topic {String} The topic
+         * @message {String|Number} [Optional]
+         * @returns {Object} The PubSub instance.
+         *
+         * PubSub.publish('new_message', 'Hello World!');
+         *
+         * PubSub.publish('new_message', 'Hello');
+         *
+         * PubSub.publish('new_message', 'Hello', 'World');
+         *
+         */
+
         var self = this,
+            settings = this.settings,
+            subtopic_marker = settings.subtopic_marker,
             subscribers = this.topics[topic] || [],
             messages = this.topic_messages[topic],
-            has_message = message !== undefined,
-            message_subscribers = (has_message && messages) ?
+            message_subscribers = (message !== undefined && messages) ?
                 messages[message] || [] :
                 [],
             publish_to = message_subscribers.concat(subscribers),
-            settings = this.settings,
-            subtopic_marker = settings.subtopic_marker,
-            t = parent_topic || topic,
+            args = slice.call(arguments, 1),
             subtopic;
 
         each(publish_to, function(subscriber) {
-            subscriber.fn(message, t, subscriber.token);
 
-            self.log('PubSub.publish', t, message, subscriber.fn);
+            subscriber.cb.apply(subscriber.context || window,
+                [ subscriber ].concat(args));
+
+            self.log('PubSub.publish', topic, message, subscriber.cb);
         });
 
         if(settings.subtopic){
             subtopic = topic.split(subtopic_marker).slice(0, -1);
 
             if (subtopic.length) {
-                this.publish(subtopic.join(subtopic_marker),
-                     message, topic);
+                this.publish.apply(this, [
+                        subtopic.join(subtopic_marker)
+                    ].concat(args));
             }
         }
 
@@ -164,6 +204,7 @@
 
     function log(){
         var console = window.console;
+
         if(!this.settings.log || console === undefined){ return this; }
 
         console.log.apply(console,
@@ -213,6 +254,5 @@
         }
     })();
 
-    return context[module_name] = PubSub.call(PubSub);
-
-})(this, this, 'PubSub');
+    return PubSub.call(PubSub);
+})(this);
