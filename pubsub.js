@@ -2,7 +2,7 @@
 **/
 
 var PubSub = (function(window, undefined) {
-    var each, uid = 0, slice = Array.prototype.slice,
+    var each, puid = 0, slice = Array.prototype.slice,
         defaults = {
             'subtopic': true,
             'subtopic_marker': ':',
@@ -38,6 +38,10 @@ var PubSub = (function(window, undefined) {
         // A place to store subscriptions with both a topic & a message.
         this.topic_messages = {};
 
+        this.puid = puid++;
+
+        this.token = 0;
+
         return this;
     }
 
@@ -45,12 +49,10 @@ var PubSub = (function(window, undefined) {
         /* Subscribe to a topic.
          *
          * @topic {String} The topic to subscribe to
-         * @message {String|Number|Boolean} Subscribe to a specific message
-         *  [Optional]
+         * @message {String|Number|Boolean} Subscribe to a specific message [Optional]
          * @cb {Function} Callback function
          * @context {Any} The context of the callback function.
-         * @returns {String} The token for this subscription, needed for
-         *  unsubscribing.
+         * @returns {String} The token for this subscription, needed for unsubscribing.
          *
          * PubSub.subscribe('new_message', function(subscription) {
          *   console.log('Message has been received:', subscription.message);
@@ -63,7 +65,7 @@ var PubSub = (function(window, undefined) {
          *
          */
 
-        var token = ''+uid++,
+        var token = ''+this.token++,
             t;
 
         if (typeof message === 'function' && cb === undefined) {
@@ -112,8 +114,6 @@ var PubSub = (function(window, undefined) {
          *
          * PubSub.publish('new_message', 'Hello');
          *
-         * PubSub.publish('new_message', 'Hello', 'World');
-         *
          */
 
         var self = this,
@@ -121,7 +121,7 @@ var PubSub = (function(window, undefined) {
             subtopic_marker = settings.subtopic_marker,
             subscribers = this.topics[topic] || [],
             messages = this.topic_messages[topic],
-            message_subscribers = (message !== undefined && messages) ?
+            message_subscribers = (messages && message !== undefined) ?
                 messages[message] || [] :
                 [],
             publish_to = message_subscribers.concat(subscribers),
@@ -139,9 +139,11 @@ var PubSub = (function(window, undefined) {
         if(settings.subtopic){
             subtopic = topic.split(subtopic_marker).slice(0, -1);
 
-            if (subtopic.length) {
+            if (subtopic.length &&
+                (subtopic = subtopic.join(subtopic_marker))) {
+
                 this.publish.apply(this, [
-                        subtopic.join(subtopic_marker)
+                        subtopic
                     ].concat(args));
             }
         }
@@ -150,6 +152,14 @@ var PubSub = (function(window, undefined) {
     }
 
     function unsubscribe(token) {
+        /* Unbsubscribe a specific subscriber from a topic.
+         *
+         * @token {String} The token of the subscriber
+         *
+         * PubSub.unsubscribe('2');
+         *
+         */
+
         var self = this,
             topics = [ this.topics, this.topic_messages ],
             r;
@@ -185,6 +195,14 @@ var PubSub = (function(window, undefined) {
     }
 
     function remove(topic) {
+        /* Unbsubscribe all subscribers from a topic.
+         *
+         * @topic {String} The topic we want to unsubscribe from.
+         *
+         * PubSub.unsubscribe('new_message');
+         *
+         *
+         */
 
         var topics = [ this.topics, this.topic_messages ],
             subtopic_marker = this.settings.subtopic_marker;
