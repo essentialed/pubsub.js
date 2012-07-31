@@ -4,7 +4,7 @@
 var PubSub = (function(window, undefined) {
     var each, puid = 0, slice = Array.prototype.slice,
         defaults = {
-            'subtopic': true,
+            'subtopics': true,
             'subtopic_marker': ':',
             'log': false
         };
@@ -16,7 +16,7 @@ var PubSub = (function(window, undefined) {
          *
          */
 
-        return this.initialize();
+        return this.initialize(opts);
     }
 
     function initialize(opts) {
@@ -136,7 +136,7 @@ var PubSub = (function(window, undefined) {
             self.log('PubSub.publish', topic, message, subscriber.cb);
         });
 
-        if(settings.subtopic){
+        if(settings.subtopics){
             subtopic = topic.split(subtopic_marker).slice(0, -1);
 
             if (subtopic.length &&

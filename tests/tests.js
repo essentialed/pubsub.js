@@ -1,16 +1,21 @@
-var pubsub_instance, test_counts = 0, data_set_size = 500;
+var test_counts = 0, data_set_size = 3500;
 
-pubsub_instance = new PubSub();
+var pubsub_instance = new PubSub(),
+    pubsub_instance_no_subtopics = new PubSub({
+        'subtopics': false
+    });
 
 startTest(PubSub, 'PubSub');
 startTest(pubsub_instance, 'PubSub Instance');
+startTest(pubsub_instance_no_subtopics, 'PubSub Instance (No subtopics)');
 
 
 function startTest(PubSub, title) {
     test_counts++;
 
     var pubsub_data,
-        published = []
+        published = [],
+        has_subtopics = PubSub.settings.subtopics;
 
     pubsub_data = generateData(PubSub);
 
@@ -19,6 +24,10 @@ function startTest(PubSub, title) {
     test('Initialize', function() {
 
         ok(PubSub, title + ' exists');
+
+        equal(typeof PubSub.settings.subtopics, typeof true, 'settings.subtopic is a boolean => ' + PubSub.settings.subtopics);
+        equal(typeof PubSub.settings.subtopic_marker, typeof '', 'settings.subtopic_marker is a string => '+ PubSub.settings.subtopic_marker);
+        equal(typeof PubSub.settings.log, typeof true, 'settings.log is a boolean => '+ PubSub.settings.log );
     });
 
     module(title+ ' ('+ PubSub.puid +')');
@@ -29,13 +38,14 @@ function startTest(PubSub, title) {
     });
 
     test('Token', function() {
+        // Set-up
         var token = PubSub.subscribe('a topic', cb);
-
         pubsub_data.push(token);
 
+        // Tests
         expect(3);
 
-        deepEqual(token, '501' , 'Subscribe method returns the token');
+        deepEqual(token,  ''+ (data_set_size + 1)  , 'Subscribe method returns the token');
 
         deepEqual(pubsub_data.data[23].token, '23', 'Test data #23 has token #23');
 
@@ -43,11 +53,14 @@ function startTest(PubSub, title) {
     });
 
     test('Subscribe', function() {
+
+        // Set-up
         var subscribers = PubSub.topics,
             subscribers_with_messages = PubSub.topic_messages,
             subscribers_length = count(subscribers),
             subscribers_with_messages_length = count(subscribers_with_messages);
 
+        // Tests
         expect(6);
 
         deepEqual(subscribers_length, pubsub_data.data.length,
@@ -74,43 +87,69 @@ function startTest(PubSub, title) {
 
     test('Publish', function() {
 
+        expect(4);
+
         equal(count(published), 0, 'No publications yet');
 
         PubSub.publish('Parent Topic:Topic #40');
 
         equal(count(published), 1, 'First publication ("Parent Topic:Topic #40")');
 
+
         PubSub.publish('Topic #43', 'Message #43');
+
+        PubSub.publish('Parent Topic:Topic #42', 'Some Message');
 
         equal(published['Topic #43'].message, 'Message #43', 'Published "' +
             published['Topic #43'].topic + '" with message "'+  published['Topic #43'].message +'"');
-
-        PubSub.publish('Parent Topic:Topic #42', 'Some Message');
 
         equal(published['Parent Topic:Topic #42'].message, 'Some Message', 'Published "' +
             published['Parent Topic:Topic #42'].topic + '" with message "Some Message"');
     });
 
-    test('Publish to Subtopics', function() {
-        PubSub.subscribe('Parent Topic', cb);
+    test('Subtopics ('+(has_subtopics?'ON':'OFF')+')', function() {
 
-        PubSub.publish('Parent Topic:Topic #20', 'Subtopic');
-
-        equal(published['Parent Topic'].message, 'Subtopic', 'Subtopics get published');
-
-        equal(published['Parent Topic:Topic #20'].message, 'Subtopic', 'Both parent topics and subtopics get published');
-
-        PubSub.publish('Topic #21:Can:Have:Many:SubTopics:That:May:Not:Have:Subsubscribers', 'Message #21');
-
-        equal(published['Topic #21:Can:Have:Many:SubTopics:That:May:Not:Have:Subsubscribers'], undefined, 'No problem with publishing in non-existing subtopics');
-
-        equal(published['Topic #21'].message, 'Message #21', 'Even if published topic did not have subscribers (eg. ParentTopic:NoSubscribers), the parent topic (eg. ParentTopic) still gets published');
-
+        // Set-up
         PubSub.subscribe('Can:Have:As:Many:SubTopics', cb);
 
         PubSub.publish('Can:Have:As:Many:SubTopics:As:You:Can:Think:Of');
 
-        equal(published['Can:Have:As:Many:SubTopics'].topic,  'Can:Have:As:Many:SubTopics', 'Can have many subtopics');
+        if(has_subtopics) {
+
+            // Set-up
+            PubSub.subscribe('Can:Have:As:Many:SubTopics', cb);
+
+            PubSub.subscribe('Parent Topic', cb);
+
+            PubSub.publish('Parent Topic:Topic #20', 'Subtopic');
+
+            PubSub.publish('Topic #21:Can:Have:Many:SubTopics:That:May:Not:Have:Subsubscribers', 'Message #21');
+
+            // Tests
+            expect(5);
+
+            equal(published['Parent Topic'].message, 'Subtopic', 'Subtopics get published');
+
+            equal(published['Parent Topic:Topic #20'].message, 'Subtopic', 'Both parent topics and subtopics get published');
+
+
+            equal(published['Topic #21:Can:Have:Many:SubTopics:That:May:Not:Have:Subsubscribers'], undefined, 'No problem with publishing in non-existing subtopics');
+
+
+            equal(published['Topic #21'].message, 'Message #21', 'Even if published topic did not have subscribers (eg. ParentTopic:NoSubscribers), the parent topic (eg. ParentTopic) still gets published');
+
+
+            equal(published['Can:Have:As:Many:SubTopics'].topic,  'Can:Have:As:Many:SubTopics', 'Can have many subtopics');
+
+        } else {
+
+            // Tests
+            expect(2);
+
+            equal(published['Can:Have:As:Many:SubTopics:As:You:Can:Think:Of'],  undefined, 'Nothing happens if publishing to topics which have no subscribers');
+
+            equal(published['Can:Have:As:Many:SubTopics'],  undefined, 'No subtopics are published if "subtopic" setting is false');
+        }
     });
 
     function generateData(pubsub_instance){
@@ -171,40 +210,3 @@ function startTest(PubSub, title) {
         return r;
     }
 }
-// test('publish', function() {
-
-// });
-
-// test('unsubscribe', function() {
-
-// });
-
-// test('remove', function() {
-
-// });
-
-// test('subtopics', function() {
-
-// });
-
-// module('Creating new PubSub Instance');
-
-// var PubSub2 = new PubSub();
-
-// test( "a basic test example", function() {
-//   var value = "hello";
-//   equal( value, "hello", "We expect value to be hello" );
-// });
-
-// test( "ok test", function() {
-//     expect(2);
-//   ok( true, "true succeeds" );
-//   ok( "non-empty", "non-empty string succeeds" );
-
-//   ok( false, "false fails" );
-//   ok( 0, "0 fails" );
-//   ok( NaN, "NaN fails" );
-//   ok( "", "empty string fails" );
-//   ok( null, "null fails" );
-//   ok( undefined, "undefined fails" );
-// });
