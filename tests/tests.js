@@ -61,7 +61,7 @@ function startTest(PubSub, title) {
             subscribers_with_messages_length = count(subscribers_with_messages);
 
         // Tests
-        expect(6);
+        expect(10);
 
         deepEqual(subscribers_length, pubsub_data.data.length,
             'topic array is created and incremented OK');
@@ -83,6 +83,29 @@ function startTest(PubSub, title) {
         deepEqual([],
             subscribers[pubsub_data.topic + '43'],
             'Subscribers with message appear only in topic_messages');
+
+        // Context
+        var context = {
+                'any_object': 'can be a context'
+            };
+
+        PubSub.subscribe('subscribe with context', 'and a message',
+            function(sub) {
+                deepEqual( context, this, '"this" in the callback is the context passed (last argument when subscribing)' );
+
+                deepEqual( sub.message, 'and a message', 'Providing context does not influence other things' );
+            }, context);
+
+        PubSub.subscribe('subscribe only with context', function(sub) {
+            deepEqual( context, this, '"this" in the callback is the context passed (last argument when subscribing)' );
+
+            deepEqual( sub.message, 'another message', 'Providing context does not influence other things' );
+        }, context);
+
+        PubSub.publish('subscribe with context', 'and a message');
+
+        PubSub.publish('subscribe only with context', 'another message');
+
     });
 
     test('Publish', function() {

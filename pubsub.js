@@ -68,7 +68,8 @@ var PubSub = (function(window, undefined) {
         var token = ''+this.token++,
             t;
 
-        if (typeof message === 'function' && cb === undefined) {
+        if (typeof message === 'function' && (cb === undefined || context === undefined)) {
+            context = cb;
             cb = message;
             message = undefined;
         }
@@ -129,9 +130,14 @@ var PubSub = (function(window, undefined) {
             subtopic;
 
         each(publish_to, function(subscriber) {
+            var subscription =  {
+                    'topic': topic,
+                    'message': message || subscriber.message,
+                    'token': subscriber.token
+               }
 
-            subscriber.cb.apply(subscriber.context || window,
-                [ subscriber ].concat(args));
+            subscriber.cb.apply(subscriber.context || self,
+                [ subscription ].concat(args));
 
             self.log('PubSub.publish', topic, message, subscriber.cb);
         });
