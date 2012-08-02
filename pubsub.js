@@ -131,8 +131,8 @@ var PubSub = (function(window, undefined) {
 
         each(publish_to, function(subscriber) {
             var subscription =  {
-                    'topic': topic,
-                    'message': message || subscriber.message,
+                    'topic': subscriber.topic,
+                    'message': subscriber.message,
                     'token': subscriber.token
                }
 

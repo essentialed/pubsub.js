@@ -61,7 +61,7 @@ function startTest(PubSub, title) {
             subscribers_with_messages_length = count(subscribers_with_messages);
 
         // Tests
-        expect(10);
+        expect(11);
 
         deepEqual(subscribers_length, pubsub_data.data.length,
             'topic array is created and incremented OK');
@@ -96,16 +96,21 @@ function startTest(PubSub, title) {
                 deepEqual( sub.message, 'and a message', 'Providing context does not influence other things' );
             }, context);
 
-        PubSub.subscribe('subscribe only with context', function(sub) {
+        PubSub.subscribe('subscribe only with context', function(sub, message) {
             deepEqual( context, this, '"this" in the callback is the context passed (last argument when subscribing)' );
 
-            deepEqual( sub.message, 'another message', 'Providing context does not influence other things' );
+            deepEqual( message, 'another message', 'Providing context does not influence other things, like messages' );
         }, context);
+
+        PubSub.subscribe('subscribe with no context', function(sub) {
+            deepEqual( PubSub, this, '"this" in the callback is the PubSub instance if no context is passed' );
+        });
 
         PubSub.publish('subscribe with context', 'and a message');
 
         PubSub.publish('subscribe only with context', 'another message');
 
+        PubSub.publish('subscribe with no context');
     });
 
     test('Publish', function() {
