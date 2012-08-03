@@ -180,6 +180,58 @@ function startTest(PubSub, title) {
         }
     });
 
+    test('Unsubscribe', function() {
+
+        var token_call_count = 0,
+            token = PubSub.subscribe('unsubscribe token test', function(sub) {
+
+            if(token_call_count === 0) {
+                ok(sub.token === token, 'Subscriptions return a token which can be used to unsubscribe');
+
+            } else if(token_call_count > 0) {
+                ok(token_call_count === 1, 'Unsubscribing with token actually works');
+            }
+
+            token_call_count++;
+        });
+
+        PubSub.publish('unsubscribe token test');
+
+        PubSub.publish('unsubscribe token test');
+
+        PubSub.unsubscribe(token);
+
+        PubSub.publish('unsubscribe token test');
+        PubSub.publish('unsubscribe token test');
+        PubSub.publish('unsubscribe token test');
+
+        equal(PubSub.topics['unsubscribe token test'].length, 0, 'Unsubscribing with token removes the subscription from the topics object');
+
+        equal(count(PubSub.topic_messages['unsubscribe token test']), 0, 'Unsubscribing with token removes the subscription from the topic_messages object');
+
+        PubSub.subscribe('Unsubscribing:with:topic:instead:of:token', cb);
+
+        PubSub.remove('Unsubscribing:with:topic:instead:of:token');
+
+        ok(PubSub.topics['Unsubscribing:with:topic:instead:of:token'] === undefined, 'Unsubscribing with *specific* topic deletes everything from the topics object');
+
+        ok(PubSub.topic_messages['Unsubscribing:with:topic:instead:of:token'] === undefined, 'Unsubscribing with *specific* topic deletes everything from the topic_messages object');
+
+        PubSub.subscribe('Unsubscribing:with:topic:instead:of:token', cb);
+
+        PubSub.remove('Unsubscribing:with:topic');
+
+        ok(PubSub.topics['Unsubscribing:with:topic:instead:of:token'] === undefined, 'Unsubscribing with parent topic deletes everything from the topics object');
+
+        ok(PubSub.topic_messages['Unsubscribing:with:topic:instead:of:token'] === undefined, 'Unsubscribing with parent topic deletes everything from the topic_messages object');
+
+        PubSub.subscribe('Unsubscribing:with:topic:instead:of:token', cb);
+
+        PubSub.remove('Unsubscribing:with:top');
+
+        equal(PubSub.topics['Unsubscribing:with:topic:instead:of:token'].length, 1, 'When unsubscribing with topic the topic\'s  (or subtopic\s)full name must be provided');
+    });
+
     function generateData(pubsub_instance){
         var i = 0,
             r = [],
