@@ -211,11 +211,14 @@ var PubSub = (function(window, undefined) {
          */
 
         var topics = [ this.topics, this.topic_messages ],
-            subtopic_marker = this.settings.subtopic_marker;
+            subtopic_marker = this.settings.subtopic_marker,
+            topic_len = topic.length + 1,
+            topic_w_marker = topic + subtopic_marker;
 
         each(topics, function(t) {
             for (var k in t) {
-                if (k.split(subtopic_marker)[0] === topic) {
+                if (k === topic ||
+                    k.substring(0, topic_len) === topic_w_marker) {
                     delete t[k];
                 }
             }
