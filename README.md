@@ -25,31 +25,32 @@ PubSub.subscribe('topic', function(subscription, message) {
     console.log('"topic" was published with message "' + message + '"');
 });
 ```
+And then..
 
 ```javascript
-    PubSub.publish('topic'); // => "topic" was published with message "undefined"
+PubSub.publish('topic'); // => "topic" was published with message "undefined"
 
-    PubSub.publish('topic', 'a message'); // => "topic" was published with message "a message"
+PubSub.publish('topic', 'a message'); // => "topic" was published with message "a message"
 ```
 
 Creating a new PubSub instance for use, let's say, with a specific module.
 Functionality and syntax stay the same.
 
 ```javascript
-    MyModule.PubSub = new PubSub();
+MyModule.PubSub = new PubSub();
 ```
 
 Passing some options in our PubSub:
 
 ```javascript
-    Events = new PubSub({
-        'subtopics': true, // true is the default value
-        'subtopic_marker': '--' // the default is ":"
-    });
+Events = new PubSub({
+    'subtopics': true, // true is the default value
+    'subtopic_marker': '--' // the default is ":"
+});
 
-    Events.subscribe('topic', function(subscription, message) {
-        console.log(subscription.topic + ' was published: ' + message);
-    });
+Events.subscribe('topic', function(subscription, message) {
+    console.log(subscription.topic + ' was published: ' + message);
+});
 ```
 
 And then..
@@ -69,81 +70,91 @@ Subtopics allow you to in a way "bubble" published messages so that you can
 do things like this:
 
 ```javascript
-    PubSub.subscribe('change', function(subscription, change) {
-        console.log('Something has changed from '  + change.from + ' to ' +
-         change.to );
-    });
+PubSub.subscribe('change', function(subscription, change) {
+    console.log('Something has changed from '  + change.from + ' to ' + change.to );
+});
 
-    PubSub.subscribe('change:name', function(subscription, change) {
-        console.log('My name has changed from ' + change.from + ' to ' +
-         change.to );
-    });
+PubSub.subscribe('change:name', function(subscription, change) {
+    console.log('My name has changed from ' + change.from + ' to ' + change.to );
+});
 
-    PubSub.publish('change:name', {
-        'from': 'A',
-        'to': 'B'
-    });
-```
+PubSub.publish('change:name', {
+    'from': 'A',
+    'to': 'B'
+});
 
-Which returns:
 // => My name has changed from A to B
 // => Something has changed from A to B
+```
 
 
 ### Unsubscribing
-By token (1)
-    var token = PubSub.subscribe('click', function(subscription, message){
-        console.log('Another click');
-    });
 
-    PubSub.publish('click');
+#### By token (1)
 
-    PubSub.unsubscribe(token);
+```javascript
+var token = PubSub.subscribe('click', function(subscription, message){
+    console.log('Another click');
+});
 
-By token (2)
-    PubSub.subscribe('click', function(subscription, message){
-        console.log('Another click');
-        PubSub.unsubscribe(subscription.token);
-    });
+PubSub.publish('click');
 
-    PubSub.publish('click');
+PubSub.unsubscribe(token);
+```
 
-By topic
-    PubSub.remove('click'); // Remove all click topics
+#### By token (2)
 
+```javascript
+PubSub.subscribe('click', function(subscription, message){
+    console.log('Another click');
+    PubSub.unsubscribe(subscription.token);
+});
+
+PubSub.publish('click');
+```
+
+#### By topic
+
+```javascript
+PubSub.remove('click'); // Remove all click topics
+```
 
 ### Topic &amp; Messages
 
-    PubSub.subscribe('change', 'name', function(subscription, message, opts){
-        console.log('My', message.toUpperCase(), 'has changed!', opts);
-    });
+```javascript
+PubSub.subscribe('change', 'name', function(subscription, message, opts){
+    console.log('My', message.toUpperCase(), 'has changed!', opts);
+});
 
-    PubSub.publish('change', 'name', {
-        'from': 'A',
-        'to': 'B'
-    });
+PubSub.publish('change', 'name', {
+    'from': 'A',
+    'to': 'B'
+});
 
-    // => 'My NAME has changed!' { 'from': 'A', 'to': 'B' }
+// => 'My NAME has changed!' { 'from': 'A', 'to': 'B' }
+```
+
 
 ### Subtopics
 
-    PubSub.subscribe('change', function(subscription, message){
-        console.log('Something has changed!', message);
-        console.dir(subscription);
-    });
+```javascript
+PubSub.subscribe('change', function(subscription, message){
+    console.log('Something has changed!', message);
+    console.dir(subscription);
+});
 
-    PubSub.subscribe('change:name', function(subscription, message){
-        console.log('My name has changed!', message);
-    });
+PubSub.subscribe('change:name', function(subscription, message){
+    console.log('My name has changed!', message);
+});
 
-    PubSub.publish('change:name', {
-        'from': 'A',
-        'to': 'B'
-    });
+PubSub.publish('change:name', {
+    'from': 'A',
+    'to': 'B'
+});
 
-    // => 'My name has changed!' { 'from': 'A', 'to': 'B' }
-    // => 'Something has changed!' { 'from': 'A', 'to': 'B' }
-
+// => 'My name has changed!' { 'from': 'A', 'to': 'B' }
+// => 'Something has changed!' { 'from': 'A', 'to': 'B' }
+```
 
 ## Other PubSub JS libraries
 * https://gist.github.com/661855
