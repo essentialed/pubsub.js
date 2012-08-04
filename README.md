@@ -26,18 +26,22 @@ PubSub.subscribe('topic', function(subscription, message) {
 });
 ```
 
-
+```javascript
     PubSub.publish('topic'); // => "topic" was published with message "undefined"
 
     PubSub.publish('topic', 'a message'); // => "topic" was published with message "a message"
+```
 
 Creating a new PubSub instance for use, let's say, with a specific module.
 Functionality and syntax stay the same.
 
+```javascript
     MyModule.PubSub = new PubSub();
+```
 
 Passing some options in our PubSub:
 
+```javascript
     Events = new PubSub({
         'subtopics': true, // true is the default value
         'subtopic_marker': '--' // the default is ":"
@@ -46,7 +50,11 @@ Passing some options in our PubSub:
     Events.subscribe('topic', function(subscription, message) {
         console.log(subscription.topic + ' was published: ' + message);
     });
+```
 
+And then..
+
+```javascript
     Events.publish('topic--childtopic--extradeeptopic', 'some message');
     // => "topic was published: some message"
 
@@ -55,10 +63,12 @@ Passing some options in our PubSub:
 
     Events.publish('topic', 'some message');
     // => "topic was published: some message"
+```
 
 Subtopics allow you to in a way "bubble" published messages so that you can
 do things like this:
 
+```javascript
     PubSub.subscribe('change', function(subscription, change) {
         console.log('Something has changed from '  + change.from + ' to ' +
          change.to );
@@ -73,10 +83,11 @@ do things like this:
         'from': 'A',
         'to': 'B'
     });
+```
 
-    Which returns:
-    // => My name has changed from A to B
-    // => Something has changed from A to B
+Which returns:
+// => My name has changed from A to B
+// => Something has changed from A to B
 
 
 ### Unsubscribing
