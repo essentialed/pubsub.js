@@ -13,28 +13,74 @@ pubsub.js
 
 ## Syntax
 
-    // Subscribing
-    PubSub.subscribe(topic, message /* optional */, callback, context /* optional */ );
+You can start using PubSub right away or you can create new instances from it.
 
-    // Publishing
-    PubSub.publish(topic, message /* optional */);
+'''javascript
+PubSub.subscribe('topic', function(subscription, message) {
+    // the subscription argument is an object with the following properties
+    // @topic {String} the topic that we are listening to, in this case "topic"
+    // @message {Anything} the message we were listening for, if any, in this case undefined
+    // @token {String} the unique ID for this subscription, used for unsubscribing
 
-### Basic
+    console.log('"topic" was published with message "' + message + '"');
+});
+'''
 
-    PubSub.subscribe('click', function(subscription, message){
-        console.log('"click" happened');
+
+    PubSub.publish('topic'); // => "topic" was published with message "undefined"
+
+    PubSub.publish('topic', 'a message'); // => "topic" was published with message "a message"
+
+Creating a new PubSub instance for use, let's say, with a specific module.
+Functionality and syntax stay the same.
+
+    MyModule.PubSub = new PubSub();
+
+Passing some options in our PubSub:
+
+    Events = new PubSub({
+        'subtopics': true, // true is the default value
+        'subtopic_marker': '--' // the default is ":"
     });
 
-    PubSub.publish('click');
-
-    PubSub.subscribe('click', 'a' function(subscription, message){
-        console.log('click on a link happened');
+    Events.subscribe('topic', function(subscription, message) {
+        console.log(subscription.topic + ' was published: ' + message);
     });
 
-    PubSub.publish('click', 'a');
+    Events.publish('topic--childtopic--extradeeptopic', 'some message');
+    // => "topic was published: some message"
+
+    Events.publish('topic--childtopic', 'some message');
+    // => "topic was published: some message"
+
+    Events.publish('topic', 'some message');
+    // => "topic was published: some message"
+
+Subtopics allow you to in a way "bubble" published messages so that you can
+do things like this:
+
+    PubSub.subscribe('change', function(subscription, change) {
+        console.log('Something has changed from '  + change.from + ' to ' +
+         change.to );
+    });
+
+    PubSub.subscribe('change:name', function(subscription, change) {
+        console.log('My name has changed from ' + change.from + ' to ' +
+         change.to );
+    });
+
+    PubSub.publish('change:name', {
+        'from': 'A',
+        'to': 'B'
+    });
+
+    Which returns:
+    // => My name has changed from A to B
+    // => Something has changed from A to B
+
 
 ### Unsubscribing
-    // By token (1)
+By token (1)
     var token = PubSub.subscribe('click', function(subscription, message){
         console.log('Another click');
     });
@@ -43,7 +89,7 @@ pubsub.js
 
     PubSub.unsubscribe(token);
 
-    // By token (2)
+By token (2)
     PubSub.subscribe('click', function(subscription, message){
         console.log('Another click');
         PubSub.unsubscribe(subscription.token);
@@ -51,7 +97,7 @@ pubsub.js
 
     PubSub.publish('click');
 
-    // By topic
+By topic
     PubSub.remove('click'); // Remove all click topics
 
 
@@ -59,9 +105,6 @@ pubsub.js
 
     PubSub.subscribe('change', 'name', function(subscription, message, opts){
         console.log('My', message.toUpperCase(), 'has changed!', opts);
-        // subscription.topic == 'change'
-        // subscription.message == 'name'
-        // subscription.token == '1' // token used to unsubscribe, String
     });
 
     PubSub.publish('change', 'name', {
@@ -75,17 +118,11 @@ pubsub.js
 
     PubSub.subscribe('change', function(subscription, message){
         console.log('Something has changed!', message);
-        console.dir(subscription)
-        // subscription.topic == 'change'
-        // subscription.message == undefined
-        // subscription.token == '2' // token used to unsubscribe, String
+        console.dir(subscription);
     });
 
     PubSub.subscribe('change:name', function(subscription, message){
         console.log('My name has changed!', message);
-        // subscription.topic == 'change:name'
-        // subscription.message == undefined
-        // subscription.token == '3' // token used to unsubscribe, String
     });
 
     PubSub.publish('change:name', {
