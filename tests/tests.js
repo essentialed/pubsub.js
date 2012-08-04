@@ -272,7 +272,7 @@ function startTest(PubSub, title) {
         r = copy(r);
         published[r.topic] = r;
         published[r.topic].message = m || r.message;
-        console.log('Published:', r);
+        // console.log('Published:', r);
     }
 
     function count(obj) {

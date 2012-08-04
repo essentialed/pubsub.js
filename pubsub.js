@@ -1,7 +1,13 @@
-/** PubSub.js 0.1 (c) 2012 Essential Education
-**/
+/** PubSub.js 0.2.0
+ *
+ * Source: https://github.com/essentialed/pubsub.js
+ * Syntax: https://github.com/essentialed/pubsub.js/blob/master/README.md
+ *
+ * Authors: Nicolas Rudas, Wendall Cada
+ * (c) 2012 Essential Education
+ **/
 
-var PubSub = (function(window, undefined) {
+var PubSub = this.PubSub || (function(window, undefined) {
     var each, puid = 0, slice = Array.prototype.slice,
         defaults = {
             'subtopics': true,
@@ -9,43 +15,18 @@ var PubSub = (function(window, undefined) {
             'log': false
         };
 
-    function PubSub(opts){
+    function P(opts){
         /* PubSub Constructor
          *
          * @opts {Object} Options for the PubSub instance, extends defaults.
          *
          */
 
-        return this.initialize(opts);
+        return this.__init__(opts);
     }
 
-    function initialize(opts) {
-        /* Setup new PubSub instance, make sure we have everything we need.
-         */
-
-        var settings = this.settings = {},
-            o;
-
-        // Settings
-        for(o in defaults) {
-            if (!defaults.hasOwnProperty(o)) { continue; }
-            settings[o] = (opts && o in opts) ? opts[o] : defaults[o];
-        }
-
-        // A place to store topic subscriptions.
-        this.topics = {};
-
-        // A place to store subscriptions with both a topic & a message.
-        this.topic_messages = {};
-
-        this.puid = puid++;
-
-        this.token = 0;
-
-        return this;
-    }
-
-    function subscribe(topic, message, cb, context) {
+    P.prototype.subscribe = P.subscribe = function subscribe(topic, message,
+        cb, context) {
         /* Subscribe to a topic.
          *
          * @topic {String} The topic to subscribe to
@@ -102,9 +83,9 @@ var PubSub = (function(window, undefined) {
         this.log('PubSub.subscribe', topic, message, token, cb, this);
 
         return token;
-    }
+    };
 
-    function publish(topic, message) {
+    P.prototype.publish = P.publish = function publish(topic, message) {
         /* Publish to a topic.
          *
          * @topic {String} The topic
@@ -155,9 +136,9 @@ var PubSub = (function(window, undefined) {
         }
 
         return this;
-    }
+    };
 
-    function unsubscribe(token) {
+    P.prototype.unsubscribe = P.unsubscribe = function unsubscribe(token) {
         /* Unbsubscribe a specific subscriber from a topic.
          *
          * @token {String} The token of the subscriber
@@ -198,9 +179,9 @@ var PubSub = (function(window, undefined) {
         });
 
         return r || false;
-    }
+    };
 
-    function remove(topic) {
+    P.prototype.remove = P.remove = function remove(topic) {
         /* Unbsubscribe all subscribers from a topic.
          *
          * @topic {String} The topic we want to unsubscribe from.
@@ -227,25 +208,44 @@ var PubSub = (function(window, undefined) {
         this.log('PubSub.remove', topic);
 
         return this;
-    }
+    };
 
-    function log(){
+    P.prototype.log = P.log = function log(){
         var console = window.console;
 
         if(!this.settings.log || console === undefined){ return this; }
 
-        console.log.apply(console,
-            Array.prototype.slice.call(arguments, 0));
+        console.log.apply(console, slice.call(arguments, 0));
 
         return this;
-    }
+    };
 
-    PubSub.prototype.initialize = PubSub.initialize = initialize;
-    PubSub.prototype.subscribe = PubSub.subscribe = subscribe;
-    PubSub.prototype.unsubscribe = PubSub.unsubscribe = unsubscribe;
-    PubSub.prototype.publish = PubSub.publish = publish;
-    PubSub.prototype.remove = PubSub.remove = remove;
-    PubSub.prototype.log = PubSub.log = log;
+    P.prototype.__init__ = P.__init__ = function init(opts) {
+        /* Setup new PubSub instance, make sure we have everything we need.
+         * You shouldn't be calling this directly.
+         */
+
+        var settings = this.settings = {},
+            o;
+
+        // Settings
+        for(o in defaults) {
+            if (!defaults.hasOwnProperty(o)) { continue; }
+            settings[o] = (opts && o in opts) ? opts[o] : defaults[o];
+        }
+
+        // A place to store topic subscriptions.
+        this.topics = {};
+
+        // A place to store subscriptions with both a topic & a message.
+        this.topic_messages = {};
+
+        this.puid = puid++;
+
+        this.token = 0;
+
+        return this;
+    };
 
     each = (function() {
         var forEach = Array.prototype.forEach,
@@ -281,5 +281,6 @@ var PubSub = (function(window, undefined) {
         }
     })();
 
-    return PubSub.call(PubSub);
+    return P.call(P);
+
 })(this);
