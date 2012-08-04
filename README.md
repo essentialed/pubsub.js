@@ -15,7 +15,7 @@ pubsub.js
 
 You can start using PubSub right away or you can create new instances from it.
 
-'''javascript
+```javascript
 PubSub.subscribe('topic', function(subscription, message) {
     // the subscription argument is an object with the following properties
     // @topic {String} the topic that we are listening to, in this case "topic"
@@ -24,7 +24,7 @@ PubSub.subscribe('topic', function(subscription, message) {
 
     console.log('"topic" was published with message "' + message + '"');
 });
-'''
+```
 
 
     PubSub.publish('topic'); // => "topic" was published with message "undefined"
