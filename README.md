@@ -56,14 +56,14 @@ Events.subscribe('topic', function(subscription, message) {
 And then..
 
 ```javascript
-    Events.publish('topic--childtopic--extradeeptopic', 'some message');
-    // => "topic was published: some message"
+Events.publish('topic--childtopic--extradeeptopic', 'some message');
+// => "topic was published: some message"
 
-    Events.publish('topic--childtopic', 'some message');
-    // => "topic was published: some message"
+Events.publish('topic--childtopic', 'some message');
+// => "topic was published: some message"
 
-    Events.publish('topic', 'some message');
-    // => "topic was published: some message"
+Events.publish('topic', 'some message');
+// => "topic was published: some message"
 ```
 
 Subtopics allow you to in a way "bubble" published messages so that you can
@@ -121,9 +121,16 @@ PubSub.remove('click'); // Remove all click topics
 
 ### Topic &amp; Messages
 
+You can subscribe to a topic &amp; message combination, when you only care about a specific message.
+
 ```javascript
+PubSub.subscribe('change', function(subscription, message, options){
+    console.log('Something has changed!', message, options);
+});
+
 PubSub.subscribe('change', 'name', function(subscription, message, opts){
     console.log('My', message.toUpperCase(), 'has changed!', opts);
+    // subscription.message === message === name
 });
 
 PubSub.publish('change', 'name', {
@@ -132,15 +139,19 @@ PubSub.publish('change', 'name', {
 });
 
 // => 'My NAME has changed!' { 'from': 'A', 'to': 'B' }
+// => 'Something has changed!' name { 'from': 'A', 'to': 'B' }
 ```
 
 
 ### Subtopics
 
+Subtopics provide a similar functionality as topic-message combination, in that they provide another level of specifity when subscribing and publishing.
+
+In both cases the publish event bubbles up to the parent topic.
+
 ```javascript
 PubSub.subscribe('change', function(subscription, message){
     console.log('Something has changed!', message);
-    console.dir(subscription);
 });
 
 PubSub.subscribe('change:name', function(subscription, message){
