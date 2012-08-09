@@ -1,102 +1,94 @@
-/** PubSub.js 0.2.0
+// Copyright 2012 Essential Education
+
+/**
+ * @fileoverview pubsub.js 0.2.0.
+ * A Pub/Sub messaging system for your JavaScript apps with topics, sub-topics,
+ *  and messages.
  *
- * Source: https://github.com/essentialed/pubsub.js
- * Syntax: https://github.com/essentialed/pubsub.js/blob/master/README.md
- *
- * Authors: Nicolas Rudas, Wendall Cada
- * (c) 2012 Essential Education
- **/
+ * @see https://github.com/essentialed/pubsub.js
+ * @author rudasn@gmail.com (Nicolas Rudas)
+ * @author wendallc@83864.com (Wendall Cada)
+ */
 
 var PubSub = this.PubSub || (function(window, undefined) {
-    var each, puid = 0, slice = Array.prototype.slice,
+    var each,
+        puid = 0,
+        slice = Array.prototype.slice,
         defaults = {
             'subtopics': true,
             'subtopic_marker': ':',
             'log': false
         };
 
-    function P(opts){
-        /* PubSub Constructor
-         *
-         * @opts {Object} Options for the PubSub instance, extends defaults.
-         *
-         */
+    /**
+     * PubSub
+     *
+     * @param {object} opts Options for the PubSub instance, extends defaults.
+     * @constructor
+     * @return {object} PubSub instance.
+     *
+     */
+    function P(opts) {
+
 
         return this.__init__(opts);
     }
 
-    P.prototype.subscribe = P.subscribe = function subscribe(topic, message,
-        cb, context) {
-        /* Subscribe to a topic.
-         *
-         * @topic {String} The topic to subscribe to
-         * @message {String|Number|Boolean} Subscribe to a specific message [Optional]
-         * @cb {Function} Callback function
-         * @context {Any} The context of the callback function.
-         * @returns {String} The token for this subscription, needed for unsubscribing.
-         *
-         * PubSub.subscribe('new_message', function(subscription) {
-         *   console.log('Message has been received:', subscription.message);
-         * });
-         *
-         * PubSub.subscribe('new_message', 'Hello', function(subscription) {
-         *   console.log('The message "Hello" has been received');
-         * });
-         *
-         *
-         */
+    /**
+     * Subscribe to a topic.
+     *
+     * @param {string} opts.topic The topic to subscribe to.
+     * @param {string|number|boolean} opts.message Subscribe to a specific
+     *      message (optional).
+     * @param {function} opts.callback The callback function.
+     * @param {Any} opts.context The context of the callback function.
+     *
+     * @return {string} The token for this subscription, needed for
+     *      unsubscribing.
+     */
+    P.prototype.subscribe = P.subscribe = function subscribe(opts) {
 
-        var token = ''+this.token++,
+        var sub = {
+                'topic': '' + opts.topic,
+                'message': opts.message,
+                'cb': opts.callback,
+                'context': opts.context,
+                'token': '' + this.token++
+            },
             t;
 
-        if (typeof message === 'function' && (cb === undefined || context === undefined)) {
-            context = cb;
-            cb = message;
-            message = undefined;
+
+        if (!this.topics[sub.topic]) {
+            this.topics[sub.topic] = [];
+            this.topic_messages[sub.topic] = {};
         }
 
-        if (typeof cb !== 'function') {
-            throw Error('PubSub.Subscribe: Callback is not a function.');
-        }
-
-        if (!this.topics[topic]) {
-            this.topics[topic] = [];
-            this.topic_messages[topic] = {};
-        }
-
-        if (message === undefined) {
-            t = this.topics[topic];
+        if (sub.message === undefined) {
+            t = this.topics[sub.topic];
 
         } else {
-            t = this.topic_messages[topic][message] || (
-                this.topic_messages[topic][message] = []);
+            sub.message = '' + sub.message;
+
+            t = this.topic_messages[sub.topic][sub.message] || (
+                this.topic_messages[sub.topic][sub.message] = []);
         }
 
-        t.push({
-            'message': message,
-            'topic': topic,
-            'cb': cb,
-            'token': token,
-            'context': context
-        });
+        t.push(sub);
 
-        this.log('PubSub.subscribe', topic, message, token, cb, this);
+        this.log('PubSub.subscribe', sub);
 
-        return token;
+        return sub.token;
     };
 
+    /**
+     * Publish to a topic.
+     *
+     * @param {string} topic The topic.
+     * @param {string|number} message The message to publish (optional).
+     *
+     * @return {object} The PubSub instance.
+     */
     P.prototype.publish = P.publish = function publish(topic, message) {
-        /* Publish to a topic.
-         *
-         * @topic {String} The topic
-         * @message {String|Number} [Optional]
-         * @returns {Object} The PubSub instance.
-         *
-         * PubSub.publish('new_message', 'Hello World!');
-         *
-         * PubSub.publish('new_message', 'Hello');
-         *
-         */
 
         var self = this,
             settings = this.settings,
@@ -111,19 +103,19 @@ var PubSub = this.PubSub || (function(window, undefined) {
             subtopic;
 
         each(publish_to, function(subscriber) {
-            var subscription =  {
+            var subscription = {
                     'topic': subscriber.topic,
                     'message': subscriber.message,
                     'token': subscriber.token
-               }
+               };
 
             subscriber.cb.apply(subscriber.context || self,
-                [ subscription ].concat(args));
+                [subscription].concat(args));
 
             self.log('PubSub.publish', topic, message, subscriber.cb);
         });
 
-        if(settings.subtopics){
+        if (settings.subtopics) {
             subtopic = topic.split(subtopic_marker).slice(0, -1);
 
             if (subtopic.length &&
@@ -138,20 +130,28 @@ var PubSub = this.PubSub || (function(window, undefined) {
         return this;
     };
 
-    P.prototype.unsubscribe = P.unsubscribe = function unsubscribe(token) {
-        /* Unbsubscribe a specific subscriber from a topic.
-         *
-         * @token {String} The token of the subscriber
-         *
-         * PubSub.unsubscribe('2');
-         *
-         */
+    /**
+     * Unbsubscribe a specific subscriber from a topic.
+     *
+     * @param {object} opts.token The token of the subscriber to be removed.
+     * @param {object} opts.topic The name of the topic to be removed.
+     *
+     * @return {number} The number of removed subscribers.
+     */
+    P.prototype.unsubscribe = P.unsubscribe = function unsubscribe(opts) {
+        opts = opts || {};
+        opts.topic = opts.topic ? '' + opts.topic : undefined;
+        opts.token = opts.token ? '' + opts.token : undefined;
 
         var self = this,
-            topics = [ this.topics, this.topic_messages ],
-            r;
+            topics = [this.topics, this.topic_messages],
+            subtopic_marker = this.settings.subtopic_marker,
+            topic_len = opts.topic ? opts.topic.length + 1 : 0,
+            topic_w_marker = opts.topic ? opts.topic + subtopic_marker : '',
+            count = 0;
 
-        each(topics, function(t) {
+        if (opts.token) {
+            each(topics, function(t) {
             each(t, function(topic) {
                 each(topic, function(sub, c) {
                     if (sub.length) {
@@ -163,11 +163,12 @@ var PubSub = this.PubSub || (function(window, undefined) {
                     }
 
                     function check(o, a, i) {
-                        if (o.token && o.token === token) {
-                            r = token;
+                        if (o.token && o.token === opts.token) {
                             a.splice(i, 1);
 
-                            self.log('PubSub.unsubscribe', token);
+                            count++;
+
+                            self.log('PubSub.unsubscribe', o);
 
                             return true;
                         }
@@ -176,60 +177,56 @@ var PubSub = this.PubSub || (function(window, undefined) {
                     }
                 });
             });
-        });
+            });
+        }
 
-        return r || false;
-    };
+        if (opts.topic) {
+            each(topics, function(t) {
+                for (var k in t) {
+                    if (k === opts.topic ||
+                          k.substring(0, topic_len) === topic_w_marker) {
+                        delete t[k];
 
-    P.prototype.remove = P.remove = function remove(topic) {
-        /* Unbsubscribe all subscribers from a topic.
-         *
-         * @topic {String} The topic we want to unsubscribe from.
-         *
-         * PubSub.unsubscribe('new_message');
-         *
-         *
-         */
+                        count++;
 
-        var topics = [ this.topics, this.topic_messages ],
-            subtopic_marker = this.settings.subtopic_marker,
-            topic_len = topic.length + 1,
-            topic_w_marker = topic + subtopic_marker;
-
-        each(topics, function(t) {
-            for (var k in t) {
-                if (k === topic ||
-                    k.substring(0, topic_len) === topic_w_marker) {
-                    delete t[k];
+                        self.log('PubSub.unsubscribe', t[k]);
+                    }
                 }
-            }
-        });
+            });
+        }
 
-        this.log('PubSub.remove', topic);
-
-        return this;
+        return count;
     };
 
-    P.prototype.log = P.log = function log(){
+    /**
+     * A logger method using console.log.
+     *
+     * @param {any} The message to log.
+     * @return {object} The PubSub instance.
+     */
+    P.prototype.log = P.log = function log() {
         var console = window.console;
 
-        if(!this.settings.log || console === undefined){ return this; }
+        if (!this.settings.log || console === undefined) { return this; }
 
-        console.log.apply(console, slice.call(arguments, 0));
+        console.log.apply(console, slice.call(arguments, 0).concat[this]);
 
         return this;
     };
 
+    /**
+     * Setup new PubSub instance, make sure we have everything we need.
+     * You shouldn't be calling this directly.
+     *
+     * @param {object} opts Options for this PubSub instance.
+     * @return {object} The PubSub instance.
+     */
     P.prototype.__init__ = P.__init__ = function init(opts) {
-        /* Setup new PubSub instance, make sure we have everything we need.
-         * You shouldn't be calling this directly.
-         */
-
         var settings = this.settings = {},
             o;
 
-        // Settings
-        for(o in defaults) {
+        // Create and extend our settings property.
+        for (o in defaults) {
             if (!defaults.hasOwnProperty(o)) { continue; }
             settings[o] = (opts && o in opts) ? opts[o] : defaults[o];
         }
@@ -240,8 +237,10 @@ var PubSub = this.PubSub || (function(window, undefined) {
         // A place to store subscriptions with both a topic & a message.
         this.topic_messages = {};
 
+        // Unique ID for this PubSub instance.
         this.puid = puid++;
 
+        // Each PubSub instance has its own token counter.
         this.token = 0;
 
         return this;
@@ -251,7 +250,7 @@ var PubSub = this.PubSub || (function(window, undefined) {
         var forEach = Array.prototype.forEach,
             objToString = Object.prototype.toString;
 
-        return function each(obj, callback){
+        return function each(obj, callback) {
             var length = obj.length,
                 isArray = length !== undefined || !isObj(obj),
                 i;

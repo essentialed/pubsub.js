@@ -39,7 +39,11 @@ function startTest(PubSub, title) {
 
     test('Token', function() {
         // Set-up
-        var token = PubSub.subscribe('a topic', cb);
+        var token = PubSub.subscribe({
+            'topic': 'a topic',
+            'callback': cb
+        });
+
         pubsub_data.push(token);
 
         // Tests
@@ -89,21 +93,32 @@ function startTest(PubSub, title) {
                 'any_object': 'can be a context'
             };
 
-        PubSub.subscribe('subscribe with context', 'and a message',
-            function(sub) {
+        PubSub.subscribe({
+            'topic': 'subscribe with context',
+            'message': 'and a message',
+            'context': context,
+            'callback': function(sub) {
                 deepEqual( context, this, '"this" in the callback is the context passed (last argument when subscribing)' );
 
                 deepEqual( sub.message, 'and a message', 'Providing context does not influence other things' );
-            }, context);
+            }
+        });
 
-        PubSub.subscribe('subscribe only with context', function(sub, message) {
-            deepEqual( context, this, '"this" in the callback is the context passed (last argument when subscribing)' );
+        PubSub.subscribe({
+            'topic': 'subscribe only with context',
+            'context': context,
+            'callback': function(sub, message) {
+                deepEqual( context, this, '"this" in the callback is the context passed (last argument when subscribing)' );
 
-            deepEqual( message, 'another message', 'Providing context does not influence other things, like messages' );
-        }, context);
+                deepEqual( message, 'another message', 'Providing context does not influence other things, like messages' );
+            }
+        });
 
-        PubSub.subscribe('subscribe with no context', function(sub) {
-            deepEqual( PubSub, this, '"this" in the callback is the PubSub instance if no context is passed' );
+        PubSub.subscribe({
+            'topic': 'subscribe with no context',
+            'callback': function(sub) {
+                deepEqual( PubSub, this, '"this" in the callback is the PubSub instance if no context is passed' );
+            }
         });
 
         PubSub.publish('subscribe with context', 'and a message');
@@ -138,16 +153,25 @@ function startTest(PubSub, title) {
     test('Subtopics ('+(has_subtopics?'ON':'OFF')+')', function() {
 
         // Set-up
-        PubSub.subscribe('Can:Have:As:Many:SubTopics', cb);
+        PubSub.subscribe({
+            'topic': 'Can:Have:As:Many:SubTopics',
+            'callback': cb
+        });
 
         PubSub.publish('Can:Have:As:Many:SubTopics:As:You:Can:Think:Of');
 
         if(has_subtopics) {
 
             // Set-up
-            PubSub.subscribe('Can:Have:As:Many:SubTopics', cb);
+            PubSub.subscribe({
+                'topic': 'Can:Have:As:Many:SubTopics',
+                'callback': cb
+            });
 
-            PubSub.subscribe('Parent Topic', cb);
+            PubSub.subscribe({
+                'topic': 'Parent Topic',
+                'callback': cb
+            });
 
             PubSub.publish('Parent Topic:Topic #20', 'Subtopic');
 
@@ -183,23 +207,27 @@ function startTest(PubSub, title) {
     test('Unsubscribe', function() {
 
         var token_call_count = 0,
-            token = PubSub.subscribe('unsubscribe token test', function(sub) {
+            token = PubSub.subscribe({
+                'topic': 'unsubscribe token test',
+                'callback': function(sub) {
+                    if(token_call_count === 0) {
+                        ok(sub.token === token, 'Subscriptions return a token which can be used to unsubscribe');
 
-            if(token_call_count === 0) {
-                ok(sub.token === token, 'Subscriptions return a token which can be used to unsubscribe');
+                    } else if(token_call_count > 0) {
+                        ok(token_call_count === 1, 'Unsubscribing with token actually works');
+                    }
 
-            } else if(token_call_count > 0) {
-                ok(token_call_count === 1, 'Unsubscribing with token actually works');
-            }
+                    token_call_count++;
+                }
+            });
 
-            token_call_count++;
+        PubSub.publish('unsubscribe token test');
+
+        PubSub.publish('unsubscribe token test');
+
+        PubSub.unsubscribe({
+            'token': token
         });
-
-        PubSub.publish('unsubscribe token test');
-
-        PubSub.publish('unsubscribe token test');
-
-        PubSub.unsubscribe(token);
 
         PubSub.publish('unsubscribe token test');
         PubSub.publish('unsubscribe token test');
@@ -209,25 +237,40 @@ function startTest(PubSub, title) {
 
         equal(count(PubSub.topic_messages['unsubscribe token test']), 0, 'Unsubscribing with token removes the subscription from the topic_messages object');
 
-        PubSub.subscribe('Unsubscribing:with:topic:instead:of:token', cb);
+        PubSub.subscribe({
+            'topic': 'Unsubscribing:with:topic:instead:of:token',
+            'callback': cb
+        });
 
-        PubSub.remove('Unsubscribing:with:topic:instead:of:token');
+        PubSub.unsubscribe({
+            'topic': 'Unsubscribing:with:topic:instead:of:token'
+        });
 
         ok(PubSub.topics['Unsubscribing:with:topic:instead:of:token'] === undefined, 'Unsubscribing with *specific* topic deletes everything from the topics object');
 
         ok(PubSub.topic_messages['Unsubscribing:with:topic:instead:of:token'] === undefined, 'Unsubscribing with *specific* topic deletes everything from the topic_messages object');
 
-        PubSub.subscribe('Unsubscribing:with:topic:instead:of:token', cb);
+        PubSub.subscribe({
+            'topic': 'Unsubscribing:with:topic:instead:of:token',
+            'callback': cb
+        });
 
-        PubSub.remove('Unsubscribing:with:topic');
+        PubSub.unsubscribe({
+            'topic': 'Unsubscribing:with:topic'
+        });
 
         ok(PubSub.topics['Unsubscribing:with:topic:instead:of:token'] === undefined, 'Unsubscribing with parent topic deletes everything from the topics object');
 
         ok(PubSub.topic_messages['Unsubscribing:with:topic:instead:of:token'] === undefined, 'Unsubscribing with parent topic deletes everything from the topic_messages object');
 
-        PubSub.subscribe('Unsubscribing:with:topic:instead:of:token', cb);
+        PubSub.subscribe({
+            'topic': 'Unsubscribing:with:topic:instead:of:token',
+            'callback': cb
+        });
 
-        PubSub.remove('Unsubscribing:with:top');
+        PubSub.unsubscribe({
+            'topic': 'Unsubscribing:with:top'
+        });
 
         equal(PubSub.topics['Unsubscribing:with:topic:instead:of:token'].length, 1, 'When unsubscribing with topic the topic\'s  (or subtopic\s)full name must be provided');
     });
@@ -246,7 +289,11 @@ function startTest(PubSub, title) {
             r.push({
                 'topic': t,
                 'message': m,
-                'token': pubsub_instance.subscribe(t, m, cb),
+                'token': pubsub_instance.subscribe({
+                    'topic': t,
+                    'message': m,
+                    'callback': cb
+                }),
                 'context': undefined,
                 'cb': cb
             });
