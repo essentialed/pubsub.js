@@ -5,8 +5,9 @@
  *
  * @see https://github.com/essentialed/pubsub.js
  * @author rudasn@gmail.com (Nicolas Rudas)
+ * @license GPLv3
  *
- * Copyright (c) 2012 Essential Education
+ * Copyright (c) 2014 Essential Education
  */
 
 (function(window, scope, undefined) {
