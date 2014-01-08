@@ -246,9 +246,9 @@ function startTest(PubSub, title) {
             'topic': 'Unsubscribing:with:topic:instead:of:token'
         });
 
-        ok(PubSub.topics['Unsubscribing:with:topic:instead:of:token'] === undefined, 'Unsubscribing with *specific* topic deletes everything from the topics object');
+        ok(PubSub.topics['Unsubscribing:with:topic:instead:of:token'].length === 0, 'Unsubscribing with *specific* topic deletes everything from the topics object');
 
-        ok(PubSub.topic_messages['Unsubscribing:with:topic:instead:of:token'] === undefined, 'Unsubscribing with *specific* topic deletes everything from the topic_messages object');
+        ok(count(PubSub.topic_messages['Unsubscribing:with:topic:instead:of:token']) === 0, 'Unsubscribing with *specific* topic deletes everything from the topic_messages object');
 
         PubSub.subscribe({
             'topic': 'Unsubscribing:with:topic:instead:of:token',
@@ -259,9 +259,9 @@ function startTest(PubSub, title) {
             'topic': 'Unsubscribing:with:topic'
         });
 
-        ok(PubSub.topics['Unsubscribing:with:topic:instead:of:token'] === undefined, 'Unsubscribing with parent topic deletes everything from the topics object');
+        ok(PubSub.topics['Unsubscribing:with:topic:instead:of:token'].length === 0, 'Unsubscribing with parent topic deletes everything from the topics object');
 
-        ok(PubSub.topic_messages['Unsubscribing:with:topic:instead:of:token'] === undefined, 'Unsubscribing with parent topic deletes everything from the topic_messages object');
+        ok(count(PubSub.topic_messages['Unsubscribing:with:topic:instead:of:token']) === 0, 'Unsubscribing with parent topic deletes everything from the topic_messages object');
 
         PubSub.subscribe({
             'topic': 'Unsubscribing:with:topic:instead:of:token',
@@ -319,18 +319,17 @@ function startTest(PubSub, title) {
         r = copy(r);
         published[r.topic] = r;
         published[r.topic].message = m || r.message;
-        // console.log('Published:', r);
     }
 
     function count(obj) {
-        var i = 0;
-        for(var k in obj){ if(!obj.hasOwnProperty(k)){continue;}i++;}
+        var i = 0, k;
+        for(k in obj){ if(!obj.hasOwnProperty(k)){continue;}i++;}
         return i;
     }
 
     function copy(obj) {
-        var r = {};
-        for(var k in obj) {
+        var r = {}, k;
+        for(k in obj) {
             if(!obj.hasOwnProperty(k)){continue;}
             r[k] = obj[k];
         }
